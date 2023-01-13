@@ -3,8 +3,8 @@ roughly finding good league schedules for large leagues, we happened
 to be running a league with "small" combinations. We wanted to see if we could
 fully explore every possible schedule to find the best one. We have:
 
-* The league plays once per week, over 4 weeks of play
-* There are 8 teams playing 12 games each week (each team playing 3 times)
+* A league that plays once per week, over 4 weeks of play
+* 8 teams playing 12 games each week (each team playing 3 times)
 
 With 48 games to be played, a naive exploration of the space requires evaluating
 `48!` = 1.24e61 game combinations. This is infeasible.
@@ -13,8 +13,8 @@ With 48 games to be played, a naive exploration of the space requires evaluating
 
 A standard round-robin algorithm provides a good starting schedule matching the
 above criteria, ensuring each team plays one another before the schedule
-repeats. As such, we can assume that we only have to shuffle games around WITHIN
-each week of play. This reduces the number of combinations to `12!⁴` = 5.2e34.
+repeats. If we assume that we only have to shuffle games around WITHIN
+each week of play, this reduces the number of combinations to `12!⁴` = 5.2e34.
 That is a large improvement, but not good enough.
 
 Within those combinations are a large number of unacceptable options each week:
@@ -23,24 +23,25 @@ Within those combinations are a large number of unacceptable options each week:
 * No team should be required to play, and then sit idle for three or more games,
   waiting for their turn to play again.
 
-If we can look through the `12!` = 479,001,600 combinations each week and throw
+If we look through the `12!` = 479,001,600 combinations each week and throw
 away unacceptable options, we can further reduce the problem space to explore.
 
 It turns out that there are only 384 options each week that are acceptable. This
 reduces the total problem space to `384⁴` = 21,743,271,936 combinations. That is
 almost acceptable; it could be fully explored by a computer in under a day.
 
-However, we can pare it down a little farther. Although we cannot require that
+However, we can pare it down a little further. Although we cannot require that
 no team ever has to sit idle for two games—there are no schedules in the 479
-million combinations per week that allow that—we can require that no team has to
+million combinations per week that allow that—we _can_ require that no team has to
 sit idle for two games TWICE in the same night. Adding this constraint reduces
-the number acceptable options for each week to just 96, and thus brings the
+the number of acceptable options for each week to just 96, and thus brings the
 overall problem space to search to just `96⁴` = 84,934,656.
-
-These 96 options per week can be found in [`options.js`](./options.js)
 
 85 million schedules can be explored in a matter of minutes, allowing us to try
 out different ways of scoring the schedules to find the best.
+
+These 96 options per week can be found in [`options.js`](./options.js)
+
 
 # What's a Good Schedule?
 
@@ -48,7 +49,7 @@ So, what are we looking for?
 
 ## Fairness in Early/Late Games
 
-In our league, some players get surly if they always have the early games,
+In our league, some players get cranky if they always have the early games,
 because they have difficulty leaving work and fighting traffic to arrive in
 time. Other players get surly if they always have to play until the latest time
 slots. Minimizing this and making it fair is the first goal.
@@ -69,27 +70,30 @@ There are hundreds of schedules with an even number of early games, but uneven l
 "lateByTeam"  : [0,2,3,2,3,2,2,2]
 ```
 
-and hundreds more with uneven early and even late:
+…and hundreds more with uneven early and even late…
 
 ```js
 "earlyByTeam" : [0,3,3,2,2,2,2,2]
 "lateByTeam"  : [2,2,2,2,2,2,2,2]
 ```
 
-but it is not possible—given our initial constraints that pared us down to just
+…but it is not possible—given our initial constraints that pared us down to just
 96 options per week—to make a perfectly-fair schedule.
 
-The same holds true if we consider "early" and "late" to be the first 3 or 4
-game slots. For example, for 4 game slots, the best schedule we can get has:
+As confirmation, this still holds true if we consider "early" and "late" to be
+the first 3 or 4 game slots instead of 2.
+For example, for 4 game slots being "early" or "late" the most-fair schedules
+all look like:
 
 ```js
 "earlyByTeam" : [4,4,4,4,4,4,4,4]
 "lateByTeam"  : [2,4,4,4,5,4,5,4]
 ```
 
+
 ## Fairness in Double-Headers
 
-Score statistics imply that teams with a double-header tend to win their
+Analyzing past leagues shows that teams with a double-header tend to win their
 second game the majority of the time. Despite this, few are excited to play a
 double-header; it's exhausting. We'd like to minimize double-headers, and also
 ensure that they are distributed evenly amongst teams.
@@ -113,7 +117,6 @@ teams to be able to get in and get out.
 Searching the 85 million schedules for ones with the smallest number of
 double-byes overall we find that 16 total double-byes are required overall.
 No schedule exists with 15 or fewer double-byes.
-(I don't know why this is, it just is.)
 
 So, ideally, we want a schedule like this:
 
@@ -132,8 +135,8 @@ find are those where three teams have a third double-bye, e.g.
 ## Bringing it All Together
 
 Proving that individual schedules exist with different characteristics does not
-prove (or find) schedules that combine them all. If you run `npm install` and
-then run [`node evaluate.js`](./evaluate.js), you will get output that ends with:
+prove that schedules exist which combine them all. If you run `npm install` and
+then run [`node evaluate.js`](./evaluate.js), you might output that ends with:
 
 ```txt
 Combo #78,844,247 (89-11-14-22) has a score of 9.200
@@ -158,10 +161,10 @@ We've succeeded in optimizing early/late games and double headers as best as
 they can be done. However, in doing so one team gets a double-bye every week.
 Something about the other fairness optimizations forces us to this conclusion.
 
-Alternatively, if we comment out line 45, so that we don't try to minimize
-double-headers, just make them _fair_ (so every team has 2), and increase
-the weighting on it, we can get a schedule without that problem, but with less
-fairness in the early/late games:
+Alternatively, if we comment out line 45 in `evaluate.js`—
+so that we don't try to minimize double-headers, just make them _fair_—and increase
+the weighting fairness, we can get a schedule without the above problem,
+but with less fairness in the early/late games:
 
 ```txt
 Combo #4,161,215 (4-67-49-94) has a score of 7.328
