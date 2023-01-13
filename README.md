@@ -1,6 +1,3 @@
-Explorations attempting to find the "best" schedule for a particular indoor
-Ultimate frisbee league.
-
 While [Rephinez](https://github.com/Phrogz/rephinez) provides a mechanism for
 roughly finding good league schedules for large leagues, we happened
 to be running a league with "small" combinations. We wanted to see if we could
@@ -184,3 +181,7 @@ The best schedule is:
   [[2,6],[1,2],[6,7],[2,4],[1,7],[4,6],[1,5],[3,7],[0,4],[3,5],[0,3],[0,5]]
 ]
 ```
+
+# Trying it Yourself
+
+Want different criteria? Different weighting? Edit the contents of `scoreCombo()` in `evaluate.js` and see what good schedule you can find. :)
