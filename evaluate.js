@@ -1,4 +1,9 @@
-const {games, optionsByRound} = require('./options')
+const options = "6teams_3gamespernight_4weeks"
+// const options = "8teams_3gamespernight_4weeks"
+// const options = "10teams_1gamepernight_8weeks"
+// const options = "10teams_2gamespernight_6weeks"
+
+const {games, optionsByRound} = require(`./options/${options}`)
 const { neatJSON } = require('neatjson')
 
 const teamCount = Math.max.apply(Math, games.flatMap(x => x)) + 1
@@ -12,10 +17,11 @@ function findBestCombo() {
     lazyProduct(optionsByRound, (...combo) => {
         const comboScore = scoreCombo(combo)
         ++ct
-        if (comboScore < bestScore) {
+        if (comboScore <= bestScore) {
             bestScore = comboScore
             bestCombo = combo
             console.log(`Combo #${ct.toLocaleString("en-US")} (${indicesFromCombo(combo).join('-')}) has a score of ${bestScore.toFixed(3)}`)
+            console.log(neatJSON(gamesForCombo(combo), {wrap:120, short:true}))
             scoreCombo(combo, true)
             console.log()
         }
@@ -23,13 +29,12 @@ function findBestCombo() {
     const elapsed = (Date.now() - startTime) / 1000
     console.log(`Evaluated ${ct.toLocaleString("en-US")} combinations in ${elapsed.toFixed(0)}s (${Math.round(ct / elapsed).toLocaleString("en-US")} per second)`)
     console.log("The best schedule is:")
-    console.log(neatJSON(gamesForCombo(bestCombo), {wrap:120}))
+    console.log(neatJSON(gamesForCombo(bestCombo), {wrap:120, short:true}))
 }
 
 function scoreCombo(combo, showStats) {
     // higher scores are worse
     let score = 0
-
 
     // Count double headers; more is worse
     const doubleHeadersByTeam = [...teamZeros]
@@ -79,7 +84,7 @@ function scoreCombo(combo, showStats) {
 
     if (showStats) console.log(neatJSON(
         {earlyByTeam, lateByTeam, doubleHeadersByTeam, doubleByesByTeam},
-        {wrap:60, aligned:true, aroundColon:1}
+        {wrap:60, aligned:true, aroundColon:1, short:true}
     ))
 
     return score

@@ -4,7 +4,7 @@ to be running a league with "small" combinations. We wanted to see if we could
 fully explore every possible schedule to find the best one. We have:
 
 * A league that plays once per week, over 4 weeks of play
-* 8 teams playing 12 games each week (each team playing 3 times)
+* 8 teams playing 12 games each week (each team playing 3 times per night)
 
 With 48 games to be played, a naive exploration of the space requires evaluating
 `48!` = 1.24e61 game combinations. This is infeasible.
@@ -40,7 +40,8 @@ overall problem space to search to just `96⁴` = 84,934,656.
 85 million schedules can be explored in a matter of minutes, allowing us to try
 out different ways of scoring the schedules to find the best.
 
-These 96 options per week can be found in [`options.js`](./options.js)
+These 96 options per week can be found in the file
+[`options/8teams_3gamespernight_4weeks.js`](./options/8teams_3gamespernight_4weeks.js)
 
 
 # What's a Good Schedule?
@@ -149,22 +150,25 @@ Combo #78,844,247 (89-11-14-22) has a score of 9.200
 
 Evaluated 84,934,656 combinations in 292s (291,183 per second)
 The best schedule is:
-[
-  [[1,4],[4,6],[1,2],[3,4],[1,6],[2,3],[0,6],[2,5],[3,7],[0,5],[5,7],[0,7]],
-  [[3,5],[1,3],[1,5],[0,3],[1,7],[5,6],[0,4],[6,7],[0,2],[4,7],[2,6],[2,4]],
-  [[5,7],[2,7],[2,5],[0,7],[2,3],[4,5],[0,6],[3,4],[0,1],[3,6],[1,4],[1,6]],
-  [[2,6],[4,6],[1,2],[6,7],[2,4],[1,7],[0,4],[1,5],[3,7],[0,5],[0,3],[3,5]]
-]
+[[[1,4],[4,6],[1,2],[3,4],[1,6],[2,3],[0,6],[2,5],[3,7],[0,5],[5,7],[0,7]],
+ [[3,5],[1,3],[1,5],[0,3],[1,7],[5,6],[0,4],[6,7],[0,2],[4,7],[2,6],[2,4]],
+ [[5,7],[2,7],[2,5],[0,7],[2,3],[4,5],[0,6],[3,4],[0,1],[3,6],[1,4],[1,6]],
+ [[2,6],[4,6],[1,2],[6,7],[2,4],[1,7],[0,4],[1,5],[3,7],[0,5],[0,3],[3,5]]]
 ```
 
 We've succeeded in optimizing early/late games and double headers as best as
 they can be done. However, in doing so one team gets a double-bye every week.
 Something about the other fairness optimizations forces us to this conclusion.
 
-Alternatively, if we comment out line 45 in `evaluate.js`—
-so that we don't try to minimize double-headers, just make them _fair_—and increase
-the weighting fairness, we can get a schedule without the above problem,
-but with less fairness in the early/late games:
+Alternatively, if we comment out line 50 in `evaluate.js`:
+
+```js
+    score += sum(doubleHeadersByTeam) / 5
+```
+so that we don't try to minimize double-headers, but instead just balance
+out how many each team gets, and then increase the weighting fairness,
+we can get a schedule without the above problem, but with less fairness in
+the early/late games:
 
 ```txt
 Combo #4,161,215 (4-67-49-94) has a score of 7.328
@@ -177,14 +181,43 @@ Combo #4,161,215 (4-67-49-94) has a score of 7.328
 
 Evaluated 84,934,656 combinations in 277s (306,402 per second)
 The best schedule is:
-[
-  [[5,7],[3,7],[2,5],[0,7],[2,3],[0,5],[3,4],[1,2],[0,6],[1,4],[4,6],[1,6]],
-  [[2,4],[0,4],[0,2],[4,7],[2,6],[0,3],[6,7],[1,7],[3,5],[5,6],[1,3],[1,5]],
-  [[0,6],[1,6],[0,1],[3,6],[1,4],[0,7],[3,4],[2,3],[5,7],[4,5],[2,7],[2,5]],
-  [[2,6],[1,2],[6,7],[2,4],[1,7],[4,6],[1,5],[3,7],[0,4],[3,5],[0,3],[0,5]]
-]
+[[[5,7],[3,7],[2,5],[0,7],[2,3],[0,5],[3,4],[1,2],[0,6],[1,4],[4,6],[1,6]],
+ [[2,4],[0,4],[0,2],[4,7],[2,6],[0,3],[6,7],[1,7],[3,5],[5,6],[1,3],[1,5]],
+ [[0,6],[1,6],[0,1],[3,6],[1,4],[0,7],[3,4],[2,3],[5,7],[4,5],[2,7],[2,5]],
+ [[2,6],[1,2],[6,7],[2,4],[1,7],[4,6],[1,5],[3,7],[0,4],[3,5],[0,3],[0,5]]]
 ```
+
 
 # Trying it Yourself
 
-Want different criteria? Different weighting? Edit the contents of `scoreCombo()` in `evaluate.js` and see what good schedule you can find. :)
+1. Clone this repo.
+2. In the working directory for this repo, run  
+   `npm install`  
+   to download and install the necessary dependencies.
+3. In the working directory for this repo, run  
+   `node evaluate.js`  
+   and watch as it runs through all the combinations, printing out the best
+   schedule it finds (a lower score is better),
+   along with the statistics about how good that schedule is.
+4. Want different criteria? Different weighting? Edit the contents of
+   `scoreCombo()` in `evaluate.js` and see what good schedule you can find. :)
+
+
+## Trying Different Scenarios
+
+This code was originally written as a one-off investigation, so it's not
+packaged as nicely as I'd like. This repo currently has a few different option
+files in `options` directory, with specific forbidden rules already baked in.
+To change which of those is used, modify the first line of `evaluate.js`.
+
+Want 10 teams? Want to allow triple headers? Teams only play twice a night?
+Time to start coding! (Sorry.)
+
+The file `options/generate.js` can create the content for a new `options` file
+if you edit the values at top. It does have a few specifics hardcoded into it
+in the implementation of forbidding double- or triple-headers. Experiment!
+
+Depending on the setup, generating the round options this can take quite some time.
+While 6 teams playing 3 games per night over 4 weeks can be explored in under 5 seconds,
+upping the total to 8 teams increases the time to over an hour. This pre-filtering
+of games per week is what makes the quick exploration to find reasonable combinations possible.
