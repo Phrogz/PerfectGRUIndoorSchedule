@@ -1,15 +1,20 @@
+# Calculating the Perfect Indoor Schedule
+
+## Motivation and Problem Space
+
 While [Rephinez](https://github.com/Phrogz/rephinez) provides a mechanism for
-roughly finding good league schedules for large leagues, we happened
-to be running a league with "small" combinations. We wanted to see if we could
-fully explore every possible schedule to find the best one. We have:
+roughly finding good league schedules for large leagues, we often find ourselves
+running a league with "small" combinations. We wanted to see if we could
+fully explore every possible schedule to find the best one. Initially we have:
 
 * A league that plays once per week, over 4 weeks of play
 * 8 teams playing 12 games each week (each team playing 3 times per night)
+* A single field shared throughout the league
 
 With 48 games to be played, a naive exploration of the space requires evaluating
 `48!` = 1.24e61 game combinations. This is infeasible.
 
-# Shrinking the Problem Space
+### Shrinking the Problem Space
 
 A standard round-robin algorithm provides a good starting schedule matching the
 above criteria, ensuring each team plays one another before the schedule
@@ -44,11 +49,11 @@ These 96 options per week can be found in the file
 [`options/8teams_3gamespernight_4weeks.js`](./options/8teams_3gamespernight_4weeks.js)
 
 
-# What's a Good Schedule?
+## What's a Good Schedule?
 
 So, what are we looking for?
 
-## Fairness in Early/Late Games
+### Fairness in Early/Late Games
 
 In our league, some players get cranky if they always have the early games,
 because they have difficulty leaving work and fighting traffic to arrive in
@@ -58,7 +63,7 @@ slots. Minimizing this and making it fair is the first goal.
 If we assume the first two time slots are "early", and the last two time slots
 are "late", then we know that there are a required minimum of 16 early games
 and 16 late games.
-(2 time slots * 2 teams per time slot * 4 weeks of play = 16 games of each type)
+(2 time slots × 2 teams per time slot × 4 weeks of play = 16 games of each type)
 
 Exploring the schedule JUST to minimize the standard deviation of number of
 games of each type played by each team, we discover that there are no schedules
@@ -92,7 +97,7 @@ all look like:
 ```
 
 
-## Fairness in Double-Headers
+### Fairness in Double-Headers
 
 Analyzing past leagues shows that teams with a double-header tend to win their
 second game the majority of the time. Despite this, few are excited to play a
@@ -107,7 +112,7 @@ Ideally, then, we'd like to pick one of the (many) schedules like:
 ```
 
 
-## Fairness in Double Byes
+### Fairness in Double Byes
 
 We've already ruled out triple byes, and ensured that no team has to sit idle
 for two games TWICE in the same night...but it would still be unfair if one
@@ -133,11 +138,11 @@ find are those where three teams have a third double-bye, e.g.
 ```
 
 
-## Bringing it All Together
+### Bringing it All Together
 
 Proving that individual schedules exist with different characteristics does not
 prove that schedules exist which combine them all. If you run `npm install` and
-then run [`node evaluate.js`](./evaluate.js), you might output that ends with:
+then run [`node evaluate.js`](./evaluate.js), you might see output that ends with:
 
 ```txt
 Combo #78,844,247 (89-11-14-22) has a score of 9.200
@@ -165,7 +170,8 @@ Alternatively, if we comment out line 50 in `evaluate.js`:
 ```js
     score += sum(doubleHeadersByTeam) / 5
 ```
-so that we don't try to minimize double-headers, but instead just balance
+
+…so that we don't try to minimize double-headers, but instead just balance
 out how many each team gets, and then increase the weighting fairness,
 we can get a schedule without the above problem, but with less fairness in
 the early/late games:
@@ -188,14 +194,14 @@ The best schedule is:
 ```
 
 
-# Trying it Yourself
+## Trying it Yourself
 
 1. Clone this repo.
-2. In the working directory for this repo, run  
-   `npm install`  
+2. In the working directory for this repo, run
+   `npm install`
    to download and install the necessary dependencies.
-3. In the working directory for this repo, run  
-   `node evaluate.js`  
+3. In the working directory for this repo, run
+   `node evaluate.js`
    and watch as it runs through all the combinations, printing out the best
    schedule it finds (a lower score is better),
    along with the statistics about how good that schedule is.
@@ -203,7 +209,7 @@ The best schedule is:
    `scoreCombo()` in `evaluate.js` and see what good schedule you can find. :)
 
 
-## Trying Different Scenarios
+### Trying Different Scenarios
 
 This code was originally written as a one-off investigation, so it's not
 packaged as nicely as I'd like. This repo currently has a few different option

@@ -1,18 +1,26 @@
-const teams = 10
-const gamesPerTeamPerRound = 1
-const totalRounds = 8
-const validationOptions = {
-	disallowDoubleHeaders  : true,
-	// disallowTripleHeaders     : true,
-	maximumGameGap            : 2, // double-byes allowed
-	// maxGameGapCount        : 1,
-	// maxSlotSpan               : 6, // 3 games cannot require two double-byes
-	// maxSlotSpan            : 5, // teams with a double-bye must also have a double-header
-	// maxSlotSpan            : 4,
-	// showFailureReasons     : true,
-	showProgressEveryNSeconds : 5
-}
+// Script to generate a setion of options based on number of teams, games per team per round, and number of rounds.
 
+const { exit } = require('node:process');
+
+const teams = 6
+const gamesPerTeamPerRound = 3
+const totalRounds = 6
+const validationOptions = {
+	// No team must play two games in a row
+	// noDoubleHeaders : true,
+
+	// No team must play three games in a row
+	noTripleHeaders : true,
+
+	// Maximum number of byes a team must sit between any two games
+	maxIdleSlots : 2,
+
+	// Number of slots a team has to stay from first to last game
+	maxSlotSpan : 6,
+
+	showProgressEveryNSeconds : 10
+	// showFailureReasons : true,
+}
 
 // unique combinations of games for all teams
 const games = []
@@ -92,7 +100,7 @@ function* permute(permutation) {
 }
 
 function lineupIsValid(lineup, opts) {
-	const lineupStr = JSON.stringify(lineup.map(g => games[g]));
+	const lineupStr = opts.showFailureReasons ? JSON.stringify(lineup.map(g => games[g])) : "";
 	const timeSlotsByTeam = [];
 	for (let timeSlotIndex=0; timeSlotIndex<lineup.length; timeSlotIndex++) {
 		const teams = games[lineup[timeSlotIndex]]
@@ -116,37 +124,28 @@ function lineupIsValid(lineup, opts) {
 			}
 		}
 
-		if (opts.disallowDoubleHeaders) {
-			// FIXME: this assumes 3 games per round max
-			if (gaps[0]===0 || gaps[1]===0) {
-				if (opts.showFailureReasons) console.log(`Cannot play ${lineupStr} because there's a double header for team ${team}`)
-				return false
-			}
-		}
-
-		if (opts.disallowTripleHeaders) {
-			// FIXME: this assumes 3 games per round max
-			if (gaps[0]===0 && gaps[1]===0) {
-				if (opts.showFailureReasons) console.log(`Cannot play ${lineupStr} because there's a triple header for team ${team}`)
-				return false
-			}
-		}
-
-		if (opts.maximumGameGap) {
+		if (opts.noDoubleHeaders) {
 			for (let i=0; i<gaps.length; ++i) {
-				if (gaps[i]>opts.maximumGameGap) {
-					if (opts.showFailureReasons) console.log(`Cannot play ${lineupStr} because team ${team} has a ${gaps[i]}-slot bye (maximum allowed is a ${opts.maximumGameGap}-slot bye)`)
+				if (gaps[i]===0) {
+					if (opts.showFailureReasons) console.log(`Cannot play ${lineupStr} because there's a double header for team ${team}`)
 					return false
 				}
 			}
 		}
 
-		if (opts.maxGameGapCount) {
-			let maxGapInstances = 0;
+		if (opts.noTripleHeaders) {
+			for (let i=0; i<gaps.length-1; ++i) {
+				if (gaps[i]===0 && gaps[i+1]===0) {
+					if (opts.showFailureReasons) console.log(`Cannot play ${lineupStr} because there's a triple header for team ${team}`);
+					return false;
+				}
+			}
+		}
+
+		if (opts.maxIdleSlots) {
 			for (let i=0; i<gaps.length; ++i) {
-				if (gaps[i]===opts.maximumGameGap) maxGapInstances++;
-				if (maxGapInstances > opts.maxGameGapCount) {
-					if (opts.showFailureReasons) console.log(`Cannot play ${lineupStr} because team ${team} has at least ${opts.maxGameGapCount+1} ${gaps[i]}-slot byes (maximum allowed is ${opts.maxGameGapCount} ${opts.maximumGameGap}-slot byes)`)
+				if (gaps[i]>opts.maxIdleSlots) {
+					if (opts.showFailureReasons) console.log(`Cannot play ${lineupStr} because team ${team} has a ${gaps[i]}-slot bye (maximum allowed is a ${opts.maxIdleSlots}-slot bye)`)
 					return false
 				}
 			}
@@ -179,6 +178,8 @@ gamesByRound.forEach((gameList,r) => {
 		}
 	}
 	console.log(`${possibilities.length} possibilities in round ${r}`)
+	// No need to keep going if these settings prevent a particular round.
+	if (!possibilities.length) exit(1);
 })
 
 const { neatJSON } = require('neatjson')
