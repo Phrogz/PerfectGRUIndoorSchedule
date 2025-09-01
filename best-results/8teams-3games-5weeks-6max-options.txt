@@ -1,4 +1,4 @@
-// An incomplete exploration, but with two "best" schedules with the same score
+// An incomplete exploration showing the 2 "best" schedules with the same score
 // …given an arbitrary set of weights whose values are lost to the sands of time.
 
 Combo #173,048,735 (2-3-56-94-94) has a score of 20.797

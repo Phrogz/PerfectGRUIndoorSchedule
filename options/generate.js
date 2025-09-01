@@ -2,9 +2,9 @@
 
 const { exit } = require('node:process');
 
-const teams = 6
+const teams = 8
 const gamesPerTeamPerRound = 3
-const totalRounds = 6
+const totalRounds = 5
 const validationOptions = {
 	// No team must play two games in a row
 	// noDoubleHeaders : true,
@@ -16,7 +16,7 @@ const validationOptions = {
 	maxIdleSlots : 2,
 
 	// Number of slots a team has to stay from first to last game
-	maxSlotSpan : 6,
+	maxSlotSpan : 5,
 
 	showProgressEveryNSeconds : 10
 	// showFailureReasons : true,

@@ -5,8 +5,9 @@
 // const options = "6teams_3gamespernight_4weeks-HACKED"
 // const options = "6teams_4gamespernight_4weeks"
 // const options = "8teams_3gamespernight_4weeks_6max"
-const options = "6teams_3gamespernight_5weeks"
-// const options = "8teams_3gamespernight_5weeks"
+// const options = "6teams_3gamespernight_5weeks_5max"
+// const options = "6teams_3gamespernight_5weeks_6max"
+const options = "8teams_3gamespernight_5weeks_6max"
 // const options = "6teams_4gamespernight_4weeks-8slotsmax-notriple"
 // const options = "8teams_3gamespernight_4weeks"
 // const options = "10teams_1gamepernight_8weeks"
@@ -29,19 +30,19 @@ function findBestCombo() {
   let ct = 0;
   const startTime = Date.now();
   lazyProduct(optionsByRound, (...combo) => {
-    const comboScore = scoreCombo(combo);
-    ++ct;
+    const comboScore = scoreCombo(combo, false, bestScore)
+    ++ct
     if (comboScore <= bestScore) {
-      bestScore = comboScore;
-      bestCombo = combo;
+      bestScore = comboScore
+      bestCombo = combo
       console.log(
         `Combo #${ct.toLocaleString("en-US")} (${indicesFromCombo(combo).join(
           "-"
         )}) has a score of ${bestScore.toFixed(3)}`
-      );
-      console.log(neatJSON(gamesForCombo(combo), { wrap: 120, short: true }));
-      scoreCombo(combo, true);
-      console.log();
+      )
+      console.log(neatJSON(gamesForCombo(combo), { wrap: 120, short: true }))
+      scoreCombo(combo, true)
+      console.log()
     }
   });
   const elapsed = (Date.now() - startTime) / 1000;
@@ -49,12 +50,12 @@ function findBestCombo() {
     `Evaluated ${ct.toLocaleString("en-US")} combinations in ${elapsed.toFixed(
       0
     )}s (${Math.round(ct / elapsed).toLocaleString("en-US")} per second)`
-  );
-  console.log("The best schedule is:");
-  console.log(neatJSON(gamesForCombo(bestCombo), { wrap: 120, short: true }));
+  )
+  console.log("The best schedule is:")
+  console.log(neatJSON(gamesForCombo(bestCombo), { wrap: 120, short: true }))
 }
 
-function scoreCombo(combo, showStats) {
+function scoreCombo(combo, showStats, stopIfAbove=Infinity) {
   // higher scores are worse
   let score = 0;
 
@@ -72,20 +73,22 @@ function scoreCombo(combo, showStats) {
   score += sum(doubleHeadersByTeam) / 5; // more double-headers is worse
   score += stdev(doubleHeadersByTeam); // uneven distribution is worse
   score += doubleHeadersByTeam.filter((n) => n > 3).length * 10; // 4 double headers is unacceptable
+  if (score > stopIfAbove) return score
 
   // Count triple headers; more is worse
-//   const tripleHeadersByTeam = [...teamZeros]
-//   combo.forEach(option => {
-//       option.slotByTeam.forEach((slots, t) => {
-//           for (let i=0; i<slots.length-2; i++) {
-//               if ((slots[i+1]-slots[i]) === 1 && (slots[i+2]-slots[i+1]) === 1) {
-//                   tripleHeadersByTeam[t]++
-//               }
-//           }
-//       })
-//   })
-//   score += sum(tripleHeadersByTeam) / 5 // more triple-headers is worse
-//   score += stdev(tripleHeadersByTeam)   // uneven distribution is worse
+  // const tripleHeadersByTeam = [...teamZeros]
+  // combo.forEach(option => {
+  //     option.slotByTeam.forEach((slots, t) => {
+  //         for (let i=0; i<slots.length-2; i++) {
+  //             if ((slots[i+1]-slots[i]) === 1 && (slots[i+2]-slots[i+1]) === 1) {
+  //                 tripleHeadersByTeam[t]++
+  //             }
+  //         }
+  //     })
+  // })
+  // score += sum(tripleHeadersByTeam) / 5 // more triple-headers is worse
+  // score += stdev(tripleHeadersByTeam)   // uneven distribution is worse
+  // if (score > stopIfAbove) return score
 
   // Count total number of game slots teams need to stay
   const totalSlotsByTeam = [...teamZeros];
@@ -96,6 +99,7 @@ function scoreCombo(combo, showStats) {
     });
   });
   score += stdev(totalSlotsByTeam) / 4; // make it fair
+  if (score > stopIfAbove) return score
 
   // Count double byes; more is worse
   const doubleByesByTeam = [...teamZeros];
@@ -110,20 +114,22 @@ function scoreCombo(combo, showStats) {
   });
   score += sum(doubleByesByTeam) / 4; // more double-byes is bad, but…
   score += stdev(doubleByesByTeam) * 2; // uneven distribution is far worse
+  if (score > stopIfAbove) return score
 
   // Count triple byes; more is worse
-  const tripleByesByTeam = [...teamZeros];
-  combo.forEach((option) => {
-    option.slotByTeam.forEach((slots, t) => {
-      for (let i = slots.length - 1; i--; ) {
-        if (slots[i + 1] - slots[i] > 3) {
-          tripleByesByTeam[t]++;
-        }
-      }
-    });
-  });
-  score += sum(tripleByesByTeam); // more triple-byes is bad, but…
-  score += stdev(tripleByesByTeam) * 4; // uneven distribution is far worse
+  // const tripleByesByTeam = [...teamZeros];
+  // combo.forEach((option) => {
+  //   option.slotByTeam.forEach((slots, t) => {
+  //     for (let i = slots.length - 1; i--; ) {
+  //       if (slots[i + 1] - slots[i] > 3) {
+  //         tripleByesByTeam[t]++;
+  //       }
+  //     }
+  //   });
+  // });
+  // score += sum(tripleByesByTeam); // more triple-byes is bad, but…
+  // score += stdev(tripleByesByTeam) * 4; // uneven distribution is far worse
+  // if (score > stopIfAbove) return score
 
   // Count early and late games by team; only care about unfairness, not counts
   const slotsToIncludeInEarlyOrLate = 2;
@@ -139,6 +145,7 @@ function scoreCombo(combo, showStats) {
   });
   score += stdev(earlyWeeksByTeam) * 3; // More important than other fairness
   score += stdev(lateWeeksByTeam) * 3; // More important than other fairness
+  if (score > stopIfAbove) return score
 
   const teamMatchups = [...teamZeros].map(() => [...teamZeros]);
   combo.forEach((option) => {
@@ -161,7 +168,7 @@ function scoreCombo(combo, showStats) {
           earlyWeeksByTeam,
           lateWeeksByTeam,
           doubleHeadersByTeam,
-        //   tripleHeadersByTeam,
+          // tripleHeadersByTeam,
           doubleByesByTeam,
           // tripleByesByTeam,
           totalSlotsByTeam,
@@ -171,7 +178,7 @@ function scoreCombo(combo, showStats) {
       )
     );
 
-  return score;
+  return score
 }
 
 function comboFromIndices(optionIndices) {
