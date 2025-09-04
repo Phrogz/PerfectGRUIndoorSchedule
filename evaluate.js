@@ -13,6 +13,21 @@ const options = "8teams_3gamespernight_5weeks_6max"
 // const options = "10teams_1gamepernight_8weeks"
 // const options = "10teams_2gamespernight_6weeks"
 
+// Use null to omit a factor (and speed up the evaluation)
+const painMultipliers = {
+  doubleHeaderCount:      0.1,  // don't mind double headers
+  doubleHeaderDeviation:  0.5,  // but balance them across teams
+  tripleHeaderCount:      null, // these are prevented in the options
+  tripleHeaderDeviation:  null,
+  doubleByeCount:         0.4,  // need to see the stats
+  doubleByeDeviation:     3.0,  // but balance them across teams
+  tripleByeCount:         null, // these are prevented in the options
+  tripleByeDeviation:     null,
+  earlyLateDeviation:     2.0,
+  totalSlotCount:         2.0,
+  totalSlotsDeviation:    0.2,
+}
+
 const { games, optionsByRound } = require(`./options/${options}`);
 const { neatJSON } = require("neatjson");
 
@@ -26,9 +41,9 @@ const gameSlotCount = optionsByRound[0][0].games.length;
 
 function findBestCombo() {
   let bestCombo,
-    bestScore = Infinity;
-  let ct = 0;
-  const startTime = Date.now();
+      bestScore = Infinity,
+      ct = 0
+  const startTime = Date.now()
   lazyProduct(optionsByRound, (...combo) => {
     const comboScore = scoreCombo(combo, false, bestScore)
     ++ct
@@ -59,124 +74,134 @@ function scoreCombo(combo, showStats, stopIfAbove=Infinity) {
   // higher scores are worse
   let score = 0;
 
+  let doubleHeadersByTeam, tripleHeadersByTeam, totalSlotsByTeam, earlyWeeksByTeam, lateWeeksByTeam, doubleByesByTeam, tripleByesByTeam
+
   // Count double headers
-  const doubleHeadersByTeam = [...teamZeros];
-  combo.forEach((option) => {
-    option.slotByTeam.forEach((slots, t) => {
-      for (let i = slots.length - 1; i--; ) {
-        if (slots[i + 1] - slots[i] == 1) {
-          doubleHeadersByTeam[t]++;
+  if (painMultipliers.doubleHeaderCount || painMultipliers.doubleHeaderDeviation) {
+    doubleHeadersByTeam = [...teamZeros]
+    combo.forEach((option) => {
+      option.slotByTeam.forEach((slots, t) => {
+        for (let i = slots.length - 1; i--; ) {
+          if (slots[i + 1] - slots[i] == 1) {
+            doubleHeadersByTeam[t]++
+          }
         }
-      }
+      });
     });
-  });
-  score += sum(doubleHeadersByTeam) / 5; // more double-headers is worse
-  score += stdev(doubleHeadersByTeam); // uneven distribution is worse
-  score += doubleHeadersByTeam.filter((n) => n > 3).length * 10; // 4 double headers is unacceptable
-  if (score > stopIfAbove) return score
+    if (painMultipliers.doubleHeaderCount)     score += sum(doubleHeadersByTeam) * painMultipliers.doubleHeaderCount
+    if (painMultipliers.doubleHeaderDeviation) score += stdev(doubleHeadersByTeam) * painMultipliers.doubleHeaderDeviation
+    if (score > stopIfAbove) return score
+  }
 
   // Count triple headers; more is worse
-  // const tripleHeadersByTeam = [...teamZeros]
-  // combo.forEach(option => {
-  //     option.slotByTeam.forEach((slots, t) => {
-  //         for (let i=0; i<slots.length-2; i++) {
-  //             if ((slots[i+1]-slots[i]) === 1 && (slots[i+2]-slots[i+1]) === 1) {
-  //                 tripleHeadersByTeam[t]++
-  //             }
-  //         }
-  //     })
-  // })
-  // score += sum(tripleHeadersByTeam) / 5 // more triple-headers is worse
-  // score += stdev(tripleHeadersByTeam)   // uneven distribution is worse
-  // if (score > stopIfAbove) return score
+  if (painMultipliers.tripleHeaderCount || painMultipliers.tripleHeaderDeviation) {
+    tripleHeadersByTeam = [...teamZeros]
+    combo.forEach(option => {
+        option.slotByTeam.forEach((slots, t) => {
+            for (let i=0; i<slots.length-2; i++) {
+                if ((slots[i+1]-slots[i]) === 1 && (slots[i+2]-slots[i+1]) === 1) {
+                    tripleHeadersByTeam[t]++
+                }
+            }
+        })
+    })
+    if (painMultipliers.tripleHeaderCount)     score += sum(tripleHeadersByTeam) * painMultipliers.tripleHeaderCount
+    if (painMultipliers.tripleHeaderDeviation) score += stdev(tripleHeadersByTeam) * painMultipliers.tripleHeaderDeviation
+    if (score > stopIfAbove) return score
+  }
 
   // Count total number of game slots teams need to stay
-  const totalSlotsByTeam = [...teamZeros];
-  combo.forEach((option) => {
-    option.slotByTeam.forEach((slots, t) => {
-      const slotsThisRound = slots[slots.length - 1] - slots[0] + 1;
-      totalSlotsByTeam[t] += slotsThisRound;
+  if (painMultipliers.totalSlotCount || painMultipliers.totalSlotsDeviation) {
+    totalSlotsByTeam = [...teamZeros];
+    combo.forEach((option) => {
+      option.slotByTeam.forEach((slots, t) => {
+        const slotsThisRound = slots[slots.length - 1] - slots[0] + 1;
+        totalSlotsByTeam[t] += slotsThisRound;
+      });
     });
-  });
-  score += stdev(totalSlotsByTeam) / 4; // make it fair
-  if (score > stopIfAbove) return score
+    if (painMultipliers.totalSlotCount)      score += sum(totalSlotsByTeam) * painMultipliers.totalSlotCount
+    if (painMultipliers.totalSlotsDeviation) score += stdev(totalSlotsByTeam) * painMultipliers.totalSlotsDeviation
+    if (score > stopIfAbove) return score
+  }
 
   // Count double byes; more is worse
-  const doubleByesByTeam = [...teamZeros];
-  combo.forEach((option) => {
-    option.slotByTeam.forEach((slots, t) => {
-      for (let i = slots.length - 1; i--; ) {
-        if (slots[i + 1] - slots[i] > 2) {
-          doubleByesByTeam[t]++;
+  if (painMultipliers.doubleByeCount || painMultipliers.doubleByeDeviation) {
+    doubleByesByTeam = [...teamZeros];
+    combo.forEach((option) => {
+      option.slotByTeam.forEach((slots, t) => {
+        for (let i = slots.length - 1; i--; ) {
+          if (slots[i + 1] - slots[i] > 2) {
+            doubleByesByTeam[t]++;
+          }
         }
-      }
+      });
     });
-  });
-  score += sum(doubleByesByTeam) / 4; // more double-byes is bad, but…
-  score += stdev(doubleByesByTeam) * 2; // uneven distribution is far worse
-  if (score > stopIfAbove) return score
+    if (painMultipliers.doubleByeCount)     score += sum(doubleByesByTeam) * painMultipliers.doubleByeCount
+    if (painMultipliers.doubleByeDeviation) score += stdev(doubleByesByTeam) * painMultipliers.doubleByeDeviation
+    if (score > stopIfAbove) return score
+  }
+
 
   // Count triple byes; more is worse
-  // const tripleByesByTeam = [...teamZeros];
-  // combo.forEach((option) => {
-  //   option.slotByTeam.forEach((slots, t) => {
-  //     for (let i = slots.length - 1; i--; ) {
-  //       if (slots[i + 1] - slots[i] > 3) {
-  //         tripleByesByTeam[t]++;
-  //       }
-  //     }
-  //   });
-  // });
-  // score += sum(tripleByesByTeam); // more triple-byes is bad, but…
-  // score += stdev(tripleByesByTeam) * 4; // uneven distribution is far worse
-  // if (score > stopIfAbove) return score
+  if (painMultipliers.tripleByeCount || painMultipliers.tripleByeDeviation) {
+    tripleByesByTeam = [...teamZeros];
+    combo.forEach((option) => {
+      option.slotByTeam.forEach((slots, t) => {
+        for (let i = slots.length - 1; i--; ) {
+          if (slots[i + 1] - slots[i] > 3) {
+            tripleByesByTeam[t]++;
+          }
+        }
+      });
+    });
+    if (painMultipliers.tripleByeCount)     score += sum(tripleByesByTeam) * painMultipliers.tripleByeCount
+    if (painMultipliers.tripleByeDeviation) score += stdev(tripleByesByTeam) * painMultipliers.tripleByeDeviation
+    if (score > stopIfAbove) return score
+  }
 
   // Count early and late games by team; only care about unfairness, not counts
-  const slotsToIncludeInEarlyOrLate = 2;
-  const earlyWeeksByTeam = [...teamZeros];
-  const lateWeeksByTeam = [...teamZeros];
-  combo.forEach((option) => {
-    option.slotByTeam.forEach((slots, t) => {
-      if (slots.some((s) => s < slotsToIncludeInEarlyOrLate))
-        earlyWeeksByTeam[t]++;
-      if (slots.some((s) => s >= gameSlotCount - slotsToIncludeInEarlyOrLate))
-        lateWeeksByTeam[t]++;
-    });
-  });
-  score += stdev(earlyWeeksByTeam) * 3; // More important than other fairness
-  score += stdev(lateWeeksByTeam) * 3; // More important than other fairness
-  if (score > stopIfAbove) return score
+  if (painMultipliers.earlyLateDeviation) {
+    const slotsToIncludeInEarlyOrLate = 2
+    earlyWeeksByTeam = [...teamZeros]
+    lateWeeksByTeam = [...teamZeros]
+    combo.forEach((option) => {
+      option.slotByTeam.forEach((slots, t) => {
+        if (slots.some((s) => s < slotsToIncludeInEarlyOrLate)) earlyWeeksByTeam[t]++
+        if (slots.some((s) => s >= gameSlotCount - slotsToIncludeInEarlyOrLate)) lateWeeksByTeam[t]++
+      })
+    })
+    score += stdev(earlyWeeksByTeam) * painMultipliers.earlyLateDeviation / 2
+    score += stdev(lateWeeksByTeam)  * painMultipliers.earlyLateDeviation / 2
+    if (score > stopIfAbove) return score
+  }
 
-  const teamMatchups = [...teamZeros].map(() => [...teamZeros]);
+  // Count how many times each team plays each other team
+  const teamMatchups = [...teamZeros].map(() => [...teamZeros])
   combo.forEach((option) => {
     option.games.forEach((gameIndex) => {
-      const game = games[gameIndex];
-      teamMatchups[game[0]][game[1]]++;
-      teamMatchups[game[1]][game[0]]++;
-    });
-  });
+      const game = games[gameIndex]
+      teamMatchups[game[0]][game[1]]++
+      teamMatchups[game[1]][game[0]]++
+    })
+  })
   teamMatchups.forEach((matchups) => {
     matchups.forEach((matchCount) => {
-      if (matchCount<2 || matchCount>3) score += 1;
-    });
-  });
+      if (matchCount<2 || matchCount>3) score += 1
+    })
+  })
 
-  if (showStats)
-    console.log(
-      neatJSON(
-        {
-          earlyWeeksByTeam,
-          lateWeeksByTeam,
-          doubleHeadersByTeam,
-          // tripleHeadersByTeam,
-          doubleByesByTeam,
-          // tripleByesByTeam,
-          totalSlotsByTeam,
-          teamMatchups,
-        },
-        { wrap: 60, aligned: true, aroundColon: 1, short: true }
-      )
-    );
+  if (showStats) {
+    stats = {}
+    if (earlyWeeksByTeam) stats.earlyWeeksByTeam = earlyWeeksByTeam
+    if (lateWeeksByTeam)  stats.lateWeeksByTeam  = lateWeeksByTeam
+    if (doubleHeadersByTeam) stats.doubleHeadersByTeam = doubleHeadersByTeam
+    if (tripleHeadersByTeam) stats.tripleHeadersByTeam = tripleHeadersByTeam
+    if (doubleByesByTeam) stats.doubleByesByTeam = doubleByesByTeam
+    if (tripleByesByTeam) stats.tripleByesByTeam = tripleByesByTeam
+    if (totalSlotsByTeam) stats.totalSlotsByTeam = totalSlotsByTeam
+    stats.teamMatchups = teamMatchups
+    console.log(neatJSON(stats, { wrap: 60, aligned: true, aroundColon: 1, short: true }))
+  }
 
   return score
 }
