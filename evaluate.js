@@ -7,9 +7,10 @@
 // const options = "8teams_3gamespernight_4weeks_6max"
 // const options = "6teams_3gamespernight_5weeks_5max"
 // const options = "6teams_3gamespernight_5weeks_6max"
-const options = "8teams_3gamespernight_5weeks_6max"
+// const options = "8teams_3gamespernight_5weeks_6max"
 // const options = "6teams_4gamespernight_4weeks-8slotsmax-notriple"
 // const options = "8teams_3gamespernight_4weeks"
+const options = "8teams_3gamespernight_6weeks"
 // const options = "10teams_1gamepernight_8weeks"
 // const options = "10teams_2gamespernight_6weeks"
 

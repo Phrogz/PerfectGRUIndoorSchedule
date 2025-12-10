@@ -3,8 +3,8 @@
 const { exit } = require('node:process');
 
 const teams = 8
-const gamesPerTeamPerRound = 3
-const totalRounds = 5
+const gamesPerTeamPerRound = 3 // AKA games played per night
+const totalRounds = 6 // AKA weeks of games played
 const validationOptions = {
 	// No team must play two games in a row
 	// noDoubleHeaders : true,
@@ -16,7 +16,7 @@ const validationOptions = {
 	maxIdleSlots : 2,
 
 	// Number of slots a team has to stay from first to last game
-	maxSlotSpan : 5,
+	maxSlotSpan : 6,
 
 	showProgressEveryNSeconds : 10
 	// showFailureReasons : true,
@@ -176,6 +176,7 @@ gamesByRound.forEach((gameList,r) => {
 			nextProgressMessage = now + validationOptions.showProgressEveryNSeconds * 1000
 			console.log(`...evaluated ${gamesEvaluated}/${totalGames} (${(gamesEvaluated*100/totalGames).toFixed(1)}%); found ${possibilities.length} possible options in round ${r} so far.`)
 		}
+
 	}
 	console.log(`${possibilities.length} possibilities in round ${r}`)
 	// No need to keep going if these settings prevent a particular round.
@@ -187,3 +188,4 @@ const options = neatJSON(validationOptions, {wrap:10, aligned:true, aroundColon:
 console.log(options.replace(/^/mg, "// "))
 console.log()
 console.log("module.exports = " + neatJSON({games,optionsByRound}, {wrap:180}))
+
