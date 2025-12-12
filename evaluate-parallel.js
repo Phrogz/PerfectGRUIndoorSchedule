@@ -584,7 +584,7 @@ async function findBestCombo() {
 	let totalEvaluated = 0
 	const workerEvaluated = new Array(numWorkers).fill(0)
 	let lastProgressReport = Date.now()
-	const progressReportInterval = 5000 // Report progress every 5 seconds
+	const progressReportInterval = 10000 // Report progress every 10 seconds
 	
 	// Precompute stats for all options
 	optionsByRound.forEach(roundOptions => roundOptions.forEach(option => calculateStats(option)))
