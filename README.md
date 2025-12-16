@@ -165,14 +165,8 @@ We've succeeded in optimizing early/late games and double headers as best as
 they can be done. However, in doing so one team gets a double-bye every week.
 Something about the other fairness optimizations forces us to this conclusion.
 
-Alternatively, if we comment out line 50 in `evaluate.js`:
-
-```js
-    score += sum(doubleHeadersByTeam) / 5
-```
-
-…so that we don't try to minimize double-headers, but instead just balance
-out how many each team gets, and then increase the weighting fairness,
+Alternatively, if we adjust the `painMultipliers` in `evaluate-config.js` to
+reduce the weight on double-header counts while keeping deviation weights,
 we can get a schedule without the above problem, but with less fairness in
 the early/late games:
 
@@ -205,8 +199,32 @@ The best schedule is:
    and watch as it runs through all the combinations, printing out the best
    schedule it finds (a lower score is better),
    along with the statistics about how good that schedule is.
-4. Want different criteria? Different weighting? Edit the contents of
-   `scoreCombo()` in `evaluate.js` and see what good schedule you can find. :)
+4. Want different criteria? Different weighting? Edit the `painMultipliers` object
+   in `evaluate-config.js` and see what good schedule you can find. :)
+
+
+### Trying it Faster
+
+For larger problem spaces (like 6+ weeks with 8 teams), the parallel version
+can significantly speed up evaluation by utilizing multiple CPU cores:
+
+```bash
+# Use all available CPU cores (default)
+node evaluate-parallel.js
+
+# Specify number of worker threads
+GRUWORKERS=8 node evaluate-parallel.js
+
+# Resume from a specific combo after interrupting
+node evaluate-parallel.js --start 121604611
+node evaluate-parallel.js --start 12-45-3-78-23-56  # or as indices
+
+# Initialize with a known best score to avoid printing worse results
+node evaluate-parallel.js --best 12-45-3-78-23-56
+```
+
+The parallel version provides progress updates every 5 seconds showing total
+combinations evaluated and the current best score found.
 
 
 ### Trying Different Scenarios
@@ -214,7 +232,7 @@ The best schedule is:
 This code was originally written as a one-off investigation, so it's not
 packaged as nicely as I'd like. This repo currently has a few different option
 files in `options` directory, with specific forbidden rules already baked in.
-To change which of those is used, modify the first line of `evaluate.js`.
+To change which of those is used, modify the `options` variable in `evaluate-config.js`.
 
 Want 10 teams? Want to allow triple headers? Teams only play twice a night?
 Time to start coding! (Sorry.)
@@ -223,7 +241,20 @@ The file `options/generate.js` can create the content for a new `options` file
 if you edit the values at top. It does have a few specifics hardcoded into it
 in the implementation of forbidding double- or triple-headers. Experiment!
 
-Depending on the setup, generating the round options this can take quite some time.
+For larger configurations, use `options/generate-parallel.js` instead, which
+utilizes multiple CPU cores to speed up the generation process:
+
+```bash
+# Use all available CPU cores (default)
+node options/generate-parallel.js
+
+# Specify number of worker threads
+GRUWORKERS=8 node options/generate-parallel.js
+```
+
+Depending on the setup, generating the round options can take quite some time.
 While 6 teams playing 3 games per night over 4 weeks can be explored in under 5 seconds,
-upping the total to 8 teams increases the time to over an hour. This pre-filtering
-of games per week is what makes the quick exploration to find reasonable combinations possible.
+upping the total to 8 teams increases the time to over an hour. The parallel version
+can significantly reduce this time by processing multiple rounds simultaneously.
+This pre-filtering of games per week is what makes the quick exploration to find
+reasonable combinations possible.
