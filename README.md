@@ -216,7 +216,7 @@ node evaluate-parallel.js
 GRUWORKERS=8 node evaluate-parallel.js
 
 # Resume from a specific combo after interrupting
-node evaluate-parallel.js --start 121604611
+node evaluate-parallel.js --start 121,604,611
 node evaluate-parallel.js --start 12-45-3-78-23-56  # or as indices
 
 # Initialize with a known best score to avoid printing worse results
