@@ -99,10 +99,10 @@ all look like:
 
 ### Fairness in Double-Headers
 
-Analyzing past leagues shows that teams with a double-header tend to win their
-second game the majority of the time. Despite this, few are excited to play a
-double-header; it's exhausting. We'd like to minimize double-headers, and also
-ensure that they are distributed evenly amongst teams.
+Analyzing past leagues shows that teams with back-to-back games tend to win
+their second game only ~40% of the time. Further, many players would prefer
+not to play back-to-back simply because it is exhausting. We'd like to minimize
+double-headers, and also ensure that they are distributed evenly amongst teams.
 
 No schedule in the 85 million exists with fewer than 12 double headers played.
 Ideally, then, we'd like to pick one of the (many) schedules like:
